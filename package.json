@@ -1,0 +1,248 @@
+{
+  "name": "projectcodewiz",
+  "displayName": "ProjectCodeWiz",
+  "description": "Interactive multi-language code structure visualization with AI-powered analysis, error insights, and improvement suggestions (C++, Python, Java, JavaScript/TypeScript)",
+  "version": "1.8.5",
+  "publisher": "GaryDaVinciii",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gauravvinchu1/ProjectCodeWiz"
+  },
+  "categories": [
+    "Visualization",
+    "Linters",
+    "Other"
+  ],
+  "keywords": [
+    "c++",
+    "cpp",
+    "python",
+    "java",
+    "javascript",
+    "typescript",
+    "visualization",
+    "graph",
+    "code-analysis",
+    "dependency",
+    "multi-language",
+    "ai",
+    "openai",
+    "gemini",
+    "claude",
+    "code-review",
+    "error-detection"
+  ],
+  "icon": "media/icon.png",
+  "activationEvents": [
+    "onCommand:projectcodewiz.visualize",
+    "onCommand:projectcodewiz.configureAI",
+    "onCommand:projectcodewiz.explainCode",
+    "onCommand:projectcodewiz.analyzeErrors",
+    "onCommand:projectcodewiz.suggestImprovements",
+    "onCommand:projectcodewiz.codeInsights"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "projectcodewiz.visualize",
+        "title": "Visualize",
+        "category": "ProjectCodeWiz",
+        "icon": {
+          "light": "media/visualize-light.svg",
+          "dark": "media/visualize-dark.svg"
+        }
+      },
+      {
+        "command": "projectcodewiz.configureAI",
+        "title": "Configure AI Provider & API Key",
+        "category": "ProjectCodeWiz"
+      },
+      {
+        "command": "projectcodewiz.explainCode",
+        "title": "AI: Explain Code",
+        "category": "ProjectCodeWiz",
+        "icon": "$(book)"
+      },
+      {
+        "command": "projectcodewiz.analyzeErrors",
+        "title": "AI: Analyze Errors & Fix",
+        "category": "ProjectCodeWiz",
+        "icon": "$(bug)"
+      },
+      {
+        "command": "projectcodewiz.suggestImprovements",
+        "title": "AI: Suggest Improvements",
+        "category": "ProjectCodeWiz",
+        "icon": "$(lightbulb)"
+      },
+      {
+        "command": "projectcodewiz.codeInsights",
+        "title": "AI: Full Code Insights",
+        "category": "ProjectCodeWiz",
+        "icon": "$(graph)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "projectcodewiz.visualize",
+          "group": "navigation",
+          "when": "resourceExtname == .cpp || resourceExtname == .h || resourceExtname == .hpp || resourceExtname == .cc || resourceExtname == .cxx || resourceExtname == .c || resourceExtname == .py || resourceExtname == .java || resourceExtname == .js || resourceExtname == .jsx || resourceExtname == .ts || resourceExtname == .tsx || resourceExtname == .mjs"
+        }
+      ],
+      "editor/context": [
+        {
+          "submenu": "projectcodewiz.aiSubmenu",
+          "group": "ProjectCodeWiz",
+          "when": "editorTextFocus && resourceExtname =~ /\\.(cpp|h|hpp|cc|cxx|c|py|java|js|jsx|ts|tsx|mjs)$/"
+        }
+      ],
+      "projectcodewiz.aiSubmenu": [
+        {
+          "command": "projectcodewiz.explainCode",
+          "group": "1_analyze@1"
+        },
+        {
+          "command": "projectcodewiz.analyzeErrors",
+          "group": "1_analyze@2"
+        },
+        {
+          "command": "projectcodewiz.suggestImprovements",
+          "group": "2_improve@1"
+        },
+        {
+          "command": "projectcodewiz.codeInsights",
+          "group": "2_improve@2"
+        },
+        {
+          "command": "projectcodewiz.configureAI",
+          "group": "3_config@1"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "projectcodewiz.visualize",
+          "group": "navigation"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "projectcodewiz.aiSubmenu",
+        "label": "🧠 ProjectCodeWiz AI"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "projectcodewiz.visualize",
+        "key": "ctrl+shift+v",
+        "mac": "cmd+shift+v",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "projectcodewiz.explainCode",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "projectcodewiz.analyzeErrors",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "projectcodewiz.suggestImprovements",
+        "key": "ctrl+shift+i",
+        "mac": "cmd+shift+i",
+        "when": "editorTextFocus"
+      }
+    ],
+    "configuration": {
+      "title": "ProjectCodeWiz",
+      "properties": {
+        "projectcodewiz.ignorePaths": {
+          "type": "array",
+          "default": [
+            "node_modules",
+            "build",
+            "dist",
+            ".git",
+            "out",
+            "bin",
+            "obj"
+          ],
+          "description": "Paths to ignore during workspace scanning"
+        },
+        "projectcodewiz.clangPath": {
+          "type": "string",
+          "default": "clang",
+          "description": "Path to clang executable"
+        },
+        "projectcodewiz.maxFileSizeKB": {
+          "type": "number",
+          "default": 500,
+          "description": "Maximum file size in KB to parse"
+        },
+        "projectcodewiz.aiProvider": {
+          "type": "string",
+          "default": "openai",
+          "enum": [
+            "openai",
+            "gemini",
+            "anthropic",
+            "mistral",
+            "cohere",
+            "groq"
+          ],
+          "enumDescriptions": [
+            "OpenAI (GPT-4o, GPT-4, GPT-3.5)",
+            "Google Gemini (Gemini 2.0 Flash, Gemini 1.5 Pro)",
+            "Anthropic (Claude 3.5 Sonnet, Claude 3 Opus)",
+            "Mistral AI (Mistral Large, Small, Medium)",
+            "Cohere (Command R+, Command R)",
+            "Groq (Llama 3.1, Mixtral)"
+          ],
+          "description": "AI provider for code analysis features"
+        },
+        "projectcodewiz.aiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key for the selected AI provider. Use the 'Configure AI' command for guided setup."
+        },
+        "projectcodewiz.aiModel": {
+          "type": "string",
+          "default": "",
+          "description": "AI model to use (leave empty for provider default)"
+        },
+        "projectcodewiz.aiHoverEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI-powered hover descriptions for code symbols"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^5.0.0",
+    "@typescript-eslint/parser": "^5.0.0",
+    "@vscode/vsce": "^2.32.0",
+    "eslint": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

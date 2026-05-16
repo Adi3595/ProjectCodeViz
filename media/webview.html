@@ -1,0 +1,1664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ProjectCodeWiz</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.28.1/cytoscape.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --surface2: #21262d;
+      --border: #30363d;
+      --accent: #58a6ff;
+      --accent2: #f78166;
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --green: #3fb950;
+      --orange: #d29922;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --purple: #bc8cff;
+      --teal: #39d353;
+
+      --node-class: #238636;
+      --node-class-border: #3fb950;
+      --node-function: #9e6a03;
+      --node-function-border: #d29922;
+      --node-variable: #1f6feb;
+      --node-variable-border: #58a6ff;
+      --node-object: #0d419d;
+      --node-object-border: #388bfd;
+      --node-file: #6e40c9;
+      --node-file-border: #bc8cff;
+      --node-error: #6e1b1b;
+      --node-error-border: #f85149;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ─────────────────────────────── */
+    #header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    #header .logo {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    #header .logo span { color: var(--text-muted); font-weight: 400; }
+
+    #search-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 360px;
+    }
+    #search-wrap svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+    #search {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px 6px 32px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #search:focus { border-color: var(--accent); }
+    #search::placeholder { color: var(--text-muted); }
+
+    .hdr-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 12px;
+      padding: 6px 12px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .hdr-btn:hover { background: var(--border); border-color: var(--accent); }
+    .hdr-btn.active { background: var(--accent); border-color: var(--accent); color: #000; }
+
+    #stats {
+      color: var(--text-muted);
+      font-size: 12px;
+      white-space: nowrap;
+      margin-left: auto;
+    }
+
+    /* ── MAIN LAYOUT ─────────────────────────── */
+    #main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── LEFT PANEL ──────────────────────────── */
+    #left-panel {
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .panel-section {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .panel-title {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    /* filter toggles */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      cursor: pointer;
+    }
+    .filter-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+    }
+    .filter-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .toggle {
+      width: 28px;
+      height: 15px;
+      background: var(--surface2);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      position: relative;
+      transition: background 0.2s;
+      cursor: pointer;
+    }
+    .toggle.on { background: var(--accent); border-color: var(--accent); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 11px;
+      height: 11px;
+      background: white;
+      border-radius: 50%;
+      top: 1px;
+      left: 1px;
+      transition: left 0.2s;
+    }
+    .toggle.on::after { left: 14px; }
+
+    /* layout buttons */
+    .layout-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .layout-btn {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 5px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .layout-btn:hover, .layout-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+
+    /* node list */
+    #node-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+    #node-list::-webkit-scrollbar { width: 4px; }
+    #node-list::-webkit-scrollbar-track { background: transparent; }
+    #node-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .node-list-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: background 0.12s;
+      overflow: hidden;
+    }
+    .node-list-item:hover { background: var(--surface2); }
+    .node-list-item.selected { background: rgba(88,166,255,0.15); }
+    .node-list-item .item-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .node-list-item .item-icon { flex-shrink: 0; font-size: 10px; }
+
+    /* ── GRAPH CANVAS ────────────────────────── */
+    #cy-wrap {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+    #cy {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── TOOLTIP ─────────────────────────────── */
+    #tooltip {
+      position: fixed;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 13px;
+      font-size: 12px;
+      pointer-events: none;
+      z-index: 9999;
+      max-width: 300px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      display: none;
+      line-height: 1.6;
+    }
+    .tt-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; color: var(--accent); }
+    .tt-row { display: flex; gap: 6px; }
+    .tt-key { color: var(--text-muted); min-width: 60px; }
+    .tt-val { color: var(--text); word-break: break-all; }
+    .tt-desc { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); color: var(--text-muted); font-style: italic; }
+    .tt-error { margin-top: 6px; padding: 4px 7px; background: rgba(248,81,73,0.15); border-left: 3px solid var(--red); border-radius: 3px; color: var(--red); font-size: 11px; }
+    .tt-relation { font-weight: 600; color: var(--purple); }
+
+    /* ── DETAIL PANEL (right) ─────────────────── */
+    #detail-panel {
+      width: 260px;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      flex-shrink: 0;
+      overflow-y: auto;
+      display: none;
+      flex-direction: column;
+    }
+    #detail-panel.open { display: flex; }
+    #detail-panel::-webkit-scrollbar { width: 4px; }
+    #detail-panel::-webkit-scrollbar-track { background: transparent; }
+    #detail-panel::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    #detail-close {
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 600;
+      z-index: 10;
+    }
+    #detail-close button {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 16px;
+      padding: 0 4px;
+    }
+    #detail-close button:hover { color: var(--text); }
+
+    .detail-body { padding: 12px; }
+    .detail-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .detail-prop { margin-bottom: 8px; }
+    .detail-prop-key { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 2px; }
+    .detail-prop-val { font-size: 13px; word-break: break-all; }
+    .detail-prop-val a { color: var(--accent); cursor: pointer; text-decoration: none; }
+    .detail-prop-val a:hover { text-decoration: underline; }
+
+    .detail-section-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin: 12px 0 6px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    .rel-item {
+      padding: 6px 8px;
+      background: var(--surface2);
+      border-radius: 5px;
+      margin-bottom: 5px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .rel-item:hover { background: var(--border); }
+    .rel-item .rel-type { color: var(--purple); font-weight: 600; font-size: 11px; }
+    .rel-item .rel-target { color: var(--text); }
+
+    .trace-chain {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 12px;
+    }
+    .trace-step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px;
+      background: var(--surface2);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .trace-step:hover { background: var(--border); }
+    .trace-arrow { color: var(--text-muted); }
+
+    .error-badge {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 6px 8px;
+      background: rgba(248,81,73,0.1);
+      border-left: 3px solid var(--red);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--red);
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+    .warning-badge {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      padding: 6px 8px;
+      background: rgba(210,153,34,0.1);
+      border-left: 3px solid var(--orange);
+      border-radius: 4px;
+      font-size: 11px;
+      color: var(--orange);
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+    .lang-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .lang-badge.cpp { background: rgba(0,89,156,0.2); color: #569cd6; border: 1px solid rgba(0,89,156,0.3); }
+    .lang-badge.python { background: rgba(55,118,171,0.2); color: #4b8bbe; border: 1px solid rgba(55,118,171,0.3); }
+    .lang-badge.java { background: rgba(176,114,25,0.2); color: #f89820; border: 1px solid rgba(176,114,25,0.3); }
+    .lang-badge.javascript { background: rgba(240,219,79,0.15); color: #f0db4f; border: 1px solid rgba(240,219,79,0.3); }
+    .lang-badge.typescript { background: rgba(49,120,198,0.2); color: #3178c6; border: 1px solid rgba(49,120,198,0.3); }
+
+    /* ── MINIMAP ─────────────────────────────── */
+    #minimap {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      width: 160px;
+      height: 100px;
+      background: rgba(22,27,34,0.92);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 50;
+    }
+    #minimap canvas { width: 100% !important; height: 100% !important; }
+    #minimap-label {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-size: 9px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    /* ── CONTROLS BAR ────────────────────────── */
+    #controls {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 50;
+    }
+    .ctrl-btn {
+      width: 32px;
+      height: 32px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+    .ctrl-btn:hover { background: var(--border); }
+
+    /* ── LOADING OVERLAY ─────────────────────── */
+    #loading {
+      position: absolute;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p { color: var(--text-muted); font-size: 13px; }
+
+    /* ── LEGEND ──────────────────────────────── */
+    #legend {
+      position: absolute;
+      bottom: 130px;
+      right: 12px;
+      background: rgba(22,27,34,0.92);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 11px;
+      z-index: 50;
+    }
+    .legend-title { color: var(--text-muted); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.6px; font-size: 10px; }
+    .legend-row { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .legend-rect { width: 12px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+    /* ── VIEW MODE ───────────────────────────── */
+    #view-mode-indicator {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(22,27,34,0.9);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      z-index: 50;
+    }
+    #view-mode-indicator span { color: var(--accent); font-weight: 600; }
+
+    /* Export menu */
+    #export-menu {
+      position: absolute;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      z-index: 500;
+      display: none;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    }
+    .export-item {
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.12s;
+    }
+    .export-item:hover { background: var(--surface2); }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="logo">ProjectCode<span>Wiz</span> <sup style="font-size:9px;color:#bc8cff;font-weight:400;letter-spacing:0.3px;vertical-align:super;">v1.8.5</sup></div>
+
+  <div id="search-wrap">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input id="search" type="text" placeholder="Search nodes…" autocomplete="off" />
+  </div>
+
+  <button class="hdr-btn" id="btn-file-view">📁 File View</button>
+  <button class="hdr-btn" id="btn-code-view" style="display:none;">💻 Code View</button>
+  <button class="hdr-btn" id="btn-trace" title="Trace mode: click a node to trace dependencies">🔗 Trace</button>
+  <button class="hdr-btn" id="btn-export">📤 Export</button>
+  <button class="hdr-btn" id="btn-ai-node" title="AI: Analyze selected node (select a node first)" style="background:linear-gradient(135deg,rgba(88,166,255,0.15),rgba(188,140,255,0.15));border-color:var(--purple);">🧠 AI Analyze</button>
+  <button class="hdr-btn" id="btn-magdrag" title="Magnetic Drag: dragging a node pulls its connected neighbors along">🧲 Magnetic Drag</button>
+  <button class="hdr-btn" id="btn-fit">⊡ Fit</button>
+
+  <div id="stats">0 nodes · 0 edges</div>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- LEFT PANEL -->
+  <div id="left-panel">
+    <div class="panel-section">
+      <div class="panel-title">Filters</div>
+      <div class="filter-row" data-type="class">
+        <div class="filter-label">
+          <div class="filter-dot" style="background:#3fb950;"></div> Classes
+        </div>
+        <div class="toggle on" data-type="class"></div>
+      </div>
+      <div class="filter-row" data-type="function">
+        <div class="filter-label">
+          <div class="filter-dot" style="background:#d29922;"></div> Functions
+        </div>
+        <div class="toggle on" data-type="function"></div>
+      </div>
+      <div class="filter-row" data-type="variable">
+        <div class="filter-label">
+          <div class="filter-dot" style="background:#58a6ff;"></div> Variables
+        </div>
+        <div class="toggle on" data-type="variable"></div>
+      </div>
+      <div class="filter-row" data-type="object">
+        <div class="filter-label">
+          <div class="filter-dot" style="background:#388bfd;"></div> Objects
+        </div>
+        <div class="toggle on" data-type="object"></div>
+      </div>
+      <div class="filter-row" data-type="file">
+        <div class="filter-label">
+          <div class="filter-dot" style="background:#bc8cff;"></div> Files
+        </div>
+        <div class="toggle on" data-type="file"></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-title">Layout</div>
+      <div class="layout-grid">
+        <div class="layout-btn active" data-layout="cose">Force</div>
+        <div class="layout-btn" data-layout="breadthfirst">Tree</div>
+        <div class="layout-btn" data-layout="circle">Circle</div>
+        <div class="layout-btn" data-layout="grid">Grid</div>
+      </div>
+    </div>
+
+    <div class="panel-title" style="padding: 10px 12px 4px;">Nodes</div>
+    <div id="node-list"></div>
+  </div>
+
+  <!-- GRAPH -->
+  <div id="cy-wrap">
+    <div id="loading">
+      <div class="spinner"></div>
+      <p>Rendering graph…</p>
+    </div>
+
+    <div id="cy"></div>
+
+    <div id="view-mode-indicator">Mode: <span id="view-mode-label">Code</span></div>
+
+    <!-- Controls -->
+    <div id="controls">
+      <button class="ctrl-btn" id="ctrl-zoom-in" title="Zoom in">+</button>
+      <button class="ctrl-btn" id="ctrl-zoom-out" title="Zoom out">−</button>
+      <button class="ctrl-btn" id="ctrl-fit" title="Fit all">⊡</button>
+    </div>
+
+    <!-- Legend -->
+    <div id="legend">
+      <div class="legend-title">Legend</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#3fb950;"></div> Class</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#388bfd;"></div> Object</div>
+      <div class="legend-row"><div class="legend-rect" style="background:#d29922;"></div> Function</div>
+      <div class="legend-row"><div class="legend-rect" style="background:#58a6ff;transform:skewX(-15deg);"></div> Variable</div>
+      <div class="legend-row"><div class="legend-rect" style="background:#bc8cff;transform:rotate(45deg);width:9px;height:9px;"></div> File</div>
+      <div class="legend-row"><div class="legend-dot" style="background:#f85149;border:2px solid #f85149;"></div> Has Errors</div>
+    </div>
+
+    <!-- Minimap -->
+    <div id="minimap">
+      <div id="minimap-label">Overview</div>
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL -->
+  <div id="detail-panel">
+    <div id="detail-close">
+      <span id="detail-title">Node Details</span>
+      <button id="detail-close-btn">✕</button>
+    </div>
+    <div class="detail-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- TOOLTIP -->
+<div id="tooltip"></div>
+
+<!-- EXPORT MENU -->
+<div id="export-menu">
+  <div class="export-item" id="exp-png">🖼 Export as PNG</div>
+  <div class="export-item" id="exp-json">📄 Export as JSON</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════════
+const RAW_GRAPH = __GRAPH_DATA__;
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+let cy = null;
+let currentLayout = 'cose';
+let viewMode = 'code'; // 'code' | 'file'
+let traceMode = false;
+let magneticDrag = true; // group-drag connected nodes
+let visibleTypes = new Set(['class','function','variable','object','file']);
+let selectedNodeId = null;
+
+// Drag state for connected-node physics
+let dragState = {
+  active: false,
+  grabbedNode: null,
+  neighbors: [],    // { node, origPos, offsetX, offsetY, depth }
+  startPos: null,
+  rafId: null,
+};
+
+// ═══════════════════════════════════════════════════════════
+// BUILD CYTOSCAPE ELEMENTS
+// ═══════════════════════════════════════════════════════════
+function buildElements(graphData, mode) {
+  const elements = [];
+
+  if (mode === 'file') {
+    // File-level only: show file nodes and include edges
+    const fileNodes = graphData.nodes.filter(n => n.type === 'file');
+    for (const n of fileNodes) {
+      elements.push({ group: 'nodes', data: { id: n.id, label: n.label, ...n }, classes: 'file' });
+    }
+    const fileIds = new Set(fileNodes.map(n => n.id));
+    for (const e of graphData.edges) {
+      if (fileIds.has(e.from) && fileIds.has(e.to)) {
+        elements.push({ group: 'edges', data: { id: `${e.from}-${e.to}`, source: e.from, target: e.to, ...e } });
+      }
+    }
+    return elements;
+  }
+
+  // Code-level: all visible types
+  for (const n of graphData.nodes) {
+    if (!visibleTypes.has(n.type)) { continue; }
+    const cls = [n.type, n.error ? 'has-error' : '', n.metadata?.isExternal ? 'external' : ''].filter(Boolean).join(' ');
+    elements.push({ group: 'nodes', data: { id: n.id, label: n.label, ...n }, classes: cls });
+  }
+
+  const nodeIds = new Set(graphData.nodes.filter(n => visibleTypes.has(n.type)).map(n => n.id));
+  for (const e of graphData.edges) {
+    if (!nodeIds.has(e.from) || !nodeIds.has(e.to)) { continue; }
+    const cls = e.error ? 'error-edge' : '';
+    elements.push({ group: 'edges', data: { id: `${e.from}--${e.to}--${e.relation}`, source: e.from, target: e.to, ...e }, classes: cls });
+  }
+
+  return elements;
+}
+
+// ═══════════════════════════════════════════════════════════
+// STYLESHEET
+// ═══════════════════════════════════════════════════════════
+const stylesheet = [
+  // ── Nodes ──
+  {
+    selector: 'node',
+    style: {
+      'label': 'data(label)',
+      'font-size': 11,
+      'font-family': "'Segoe UI', system-ui, sans-serif",
+      'color': '#e6edf3',
+      'text-valign': 'center',
+      'text-halign': 'center',
+      'text-wrap': 'ellipsis',
+      'text-max-width': 90,
+      'width': 'label',
+      'height': 'label',
+      'padding': '8px',
+      'border-width': 2,
+      'transition-property': 'border-color, background-color, opacity, border-width',
+      'transition-duration': '0.15s',
+      'transition-timing-function': 'ease-out',
+    }
+  },
+  {
+    selector: 'node:grabbed',
+    style: {
+      'border-width': 4,
+      'border-color': '#ffa657',
+      'overlay-opacity': 0.08,
+      'overlay-color': '#ffa657',
+      'z-index': 999,
+    }
+  },
+  {
+    selector: 'node.dragged-neighbor',
+    style: {
+      'border-color': '#ffa657',
+      'border-width': 3,
+      'overlay-opacity': 0.04,
+      'overlay-color': '#ffa657',
+      'opacity': 0.92,
+      'z-index': 998,
+    }
+  },
+  {
+    selector: 'node.class',
+    style: {
+      'shape': 'ellipse',
+      'background-color': '#238636',
+      'border-color': '#3fb950',
+      'font-weight': 'bold',
+    }
+  },
+  {
+    selector: 'node.object',
+    style: {
+      'shape': 'ellipse',
+      'background-color': '#0d419d',
+      'border-color': '#388bfd',
+    }
+  },
+  {
+    selector: 'node.function',
+    style: {
+      'shape': 'round-rectangle',
+      'background-color': '#9e6a03',
+      'border-color': '#d29922',
+    }
+  },
+  {
+    selector: 'node.variable',
+    style: {
+      'shape': 'cut-rectangle',
+      'background-color': '#1f6feb',
+      'border-color': '#58a6ff',
+    }
+  },
+  {
+    selector: 'node.file',
+    style: {
+      'shape': 'diamond',
+      'background-color': '#6e40c9',
+      'border-color': '#bc8cff',
+      'font-weight': 'bold',
+      'font-size': 12,
+    }
+  },
+  {
+    selector: 'node.external',
+    style: {
+      'opacity': 0.5,
+      'border-style': 'dashed',
+    }
+  },
+  {
+    selector: 'node.has-error',
+    style: {
+      'background-color': '#6e1b1b',
+      'border-color': '#f85149',
+      'border-width': 3,
+    }
+  },
+  {
+    selector: 'node:selected',
+    style: {
+      'border-color': '#f0f6fc',
+      'border-width': 3,
+    }
+  },
+  {
+    selector: 'node.highlighted',
+    style: {
+      'border-color': '#ffa657',
+      'border-width': 3,
+      'z-index': 10,
+    }
+  },
+  {
+    selector: 'node.dimmed',
+    style: { 'opacity': 0.2 }
+  },
+  {
+    selector: 'node.searched',
+    style: {
+      'border-color': '#f0f6fc',
+      'border-width': 3,
+      'background-color': '#b08800',
+    }
+  },
+  {
+    selector: 'node.trace-path',
+    style: {
+      'border-color': '#39d353',
+      'border-width': 4,
+      'z-index': 20,
+    }
+  },
+
+  // ── Edges ──
+  {
+    selector: 'edge',
+    style: {
+      'curve-style': 'bezier',
+      'target-arrow-shape': 'triangle',
+      'arrow-scale': 0.9,
+      'line-color': '#30363d',
+      'target-arrow-color': '#30363d',
+      'width': 1.5,
+      'opacity': 0.8,
+      'transition-property': 'line-color, opacity, width',
+      'transition-duration': '0.15s',
+      'transition-timing-function': 'ease-out',
+    }
+  },
+  {
+    selector: 'edge.dragged-edge',
+    style: {
+      'line-color': '#ffa657',
+      'target-arrow-color': '#ffa657',
+      'width': 2.5,
+      'opacity': 1,
+      'z-index': 500,
+    }
+  },
+  {
+    selector: 'edge[relation="inherits"]',
+    style: { 'line-color': '#3fb950', 'target-arrow-color': '#3fb950', 'line-style': 'solid', 'width': 2 }
+  },
+  {
+    selector: 'edge[relation="includes"]',
+    style: { 'line-color': '#bc8cff', 'target-arrow-color': '#bc8cff', 'line-style': 'dashed' }
+  },
+  {
+    selector: 'edge[relation="calls"]',
+    style: { 'line-color': '#d29922', 'target-arrow-color': '#d29922' }
+  },
+  {
+    selector: 'edge[relation="instantiates"]',
+    style: { 'line-color': '#388bfd', 'target-arrow-color': '#388bfd', 'line-style': 'dotted', 'width': 2 }
+  },
+  {
+    selector: 'edge.error-edge',
+    style: { 'line-color': '#f85149', 'target-arrow-color': '#f85149', 'line-style': 'dashed', 'width': 2 }
+  },
+  {
+    selector: 'edge.highlighted',
+    style: { 'line-color': '#ffa657', 'target-arrow-color': '#ffa657', 'width': 3, 'z-index': 10 }
+  },
+  {
+    selector: 'edge.dimmed',
+    style: { 'opacity': 0.05 }
+  },
+  {
+    selector: 'edge.trace-path',
+    style: { 'line-color': '#39d353', 'target-arrow-color': '#39d353', 'width': 3, 'z-index': 20 }
+  },
+];
+
+// ═══════════════════════════════════════════════════════════
+// INIT CYTOSCAPE
+// ═══════════════════════════════════════════════════════════
+function initCy(elements) {
+  if (cy) { cy.destroy(); }
+
+  cy = cytoscape({
+    container: document.getElementById('cy'),
+    elements,
+    style: stylesheet,
+    layout: getLayout(currentLayout),
+    wheelSensitivity: 0.25,
+    minZoom: 0.05,
+    maxZoom: 5,
+    pixelRatio: 'auto',
+    textureOnViewport: true,
+    hideEdgesOnViewport: false,
+    motionBlur: false,
+  });
+
+  setupEvents();
+  setupGroupDrag();
+  updateStats();
+  populateNodeList();
+}
+
+function getLayout(name) {
+  const layouts = {
+    cose: {
+      name: 'cose',
+      animate: true,
+      animationDuration: 500,
+      animationEasing: 'ease-out-cubic',
+      nodeRepulsion: 8000,
+      edgeElasticity: 150,
+      gravity: 0.5,
+      numIter: 1200,
+      initialTemp: 300,
+      coolingFactor: 0.96,
+      minTemp: 1.0,
+      nodeDimensionsIncludeLabels: true,
+    },
+    breadthfirst: { name: 'breadthfirst', directed: true, padding: 30, animate: true, animationDuration: 450, animationEasing: 'ease-out-cubic' },
+    circle: { name: 'circle', animate: true, animationDuration: 450, animationEasing: 'ease-out-cubic' },
+    grid: { name: 'grid', animate: true, animationDuration: 450, animationEasing: 'ease-out-cubic', condense: true },
+  };
+  return layouts[name] || layouts.cose;
+}
+
+// ═══════════════════════════════════════════════════════════
+// GROUP DRAG — Connected nodes follow the grabbed node
+// ═══════════════════════════════════════════════════════════
+function setupGroupDrag() {
+  if (!cy) return;
+
+  cy.on('grab', 'node', evt => {
+    if (!magneticDrag) return;
+    const node = evt.target;
+    const pos = node.position();
+
+    dragState.active = true;
+    dragState.grabbedNode = node;
+    dragState.startPos = { x: pos.x, y: pos.y };
+
+    // Collect neighbors with depth-based falloff (BFS, max depth 2)
+    dragState.neighbors = [];
+    const visited = new Set([node.id()]);
+    const queue = [{ n: node, depth: 0 }];
+
+    while (queue.length > 0) {
+      const { n: current, depth } = queue.shift();
+      if (depth >= 2) continue; // max depth
+
+      current.connectedEdges().forEach(edge => {
+        const other = edge.source().id() === current.id() ? edge.target() : edge.source();
+        if (visited.has(other.id())) return;
+        visited.add(other.id());
+
+        const otherPos = other.position();
+        dragState.neighbors.push({
+          node: other,
+          origPos: { x: otherPos.x, y: otherPos.y },
+          offsetX: otherPos.x - pos.x,
+          offsetY: otherPos.y - pos.y,
+          depth: depth + 1,
+        });
+
+        queue.push({ n: other, depth: depth + 1 });
+      });
+    }
+
+    // Apply visual classes
+    cy.batch(() => {
+      dragState.neighbors.forEach(nb => {
+        nb.node.addClass('dragged-neighbor');
+      });
+      node.connectedEdges().addClass('dragged-edge');
+      dragState.neighbors.forEach(nb => {
+        nb.node.connectedEdges().forEach(e => {
+          const src = e.source(), tgt = e.target();
+          if (visited.has(src.id()) && visited.has(tgt.id())) {
+            e.addClass('dragged-edge');
+          }
+        });
+      });
+    });
+  });
+
+  cy.on('drag', 'node', evt => {
+    if (!magneticDrag || !dragState.active) return;
+    if (evt.target.id() !== dragState.grabbedNode?.id()) return;
+
+    const newPos = evt.target.position();
+    const dx = newPos.x - dragState.startPos.x;
+    const dy = newPos.y - dragState.startPos.y;
+
+    // Move neighbors with spring-physics falloff based on depth
+    // depth 1 = 80% follow, depth 2 = 40% follow
+    cy.batch(() => {
+      for (const nb of dragState.neighbors) {
+        const factor = nb.depth === 1 ? 0.80 : 0.40;
+        nb.node.position({
+          x: nb.origPos.x + dx * factor,
+          y: nb.origPos.y + dy * factor,
+        });
+      }
+    });
+  });
+
+  cy.on('free', 'node', evt => {
+    if (!dragState.active) return;
+    if (evt.target.id() !== dragState.grabbedNode?.id()) return;
+
+    // Smoothly settle neighbors to final positions with spring animation
+    const newPos = evt.target.position();
+    const dx = newPos.x - dragState.startPos.x;
+    const dy = newPos.y - dragState.startPos.y;
+
+    // Animate remaining spring correction for depth-2 neighbors
+    dragState.neighbors.forEach(nb => {
+      const factor = nb.depth === 1 ? 0.85 : 0.55;
+      const targetX = nb.origPos.x + dx * factor;
+      const targetY = nb.origPos.y + dy * factor;
+
+      nb.node.animate({
+        position: { x: targetX, y: targetY },
+      }, {
+        duration: 200,
+        easing: 'ease-out-cubic',
+      });
+    });
+
+    // Clean up classes
+    cy.batch(() => {
+      cy.elements().removeClass('dragged-neighbor dragged-edge');
+    });
+
+    dragState.active = false;
+    dragState.grabbedNode = null;
+    dragState.neighbors = [];
+    dragState.startPos = null;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════
+function setupEvents() {
+  const tooltip = document.getElementById('tooltip');
+
+  // ── Node hover ──
+  cy.on('mouseover', 'node', evt => {
+    const n = evt.target.data();
+    const pos = evt.renderedPosition;
+    const panelRect = document.getElementById('cy-wrap').getBoundingClientRect();
+
+    let html = `<div class="tt-title">${escHtml(n.label)}</div>`;
+    html += `<div class="tt-row"><span class="tt-key">Type</span><span class="tt-val">${n.type}</span></div>`;
+    if (n.metadata?.language) {
+      html += `<div class="tt-row"><span class="tt-key">Lang</span><span class="tt-val"><span class="lang-badge ${n.metadata.language}">${n.metadata.language}</span></span></div>`;
+    }
+    if (n.file && n.file !== 'external') {
+      html += `<div class="tt-row"><span class="tt-key">File</span><span class="tt-val">${escHtml(shortPath(n.file))}</span></div>`;
+    }
+    if (n.line) {
+      html += `<div class="tt-row"><span class="tt-key">Line</span><span class="tt-val">${n.line}</span></div>`;
+    }
+    if (n.metadata?.baseClasses?.length) {
+      html += `<div class="tt-row"><span class="tt-key">Extends</span><span class="tt-val">${n.metadata.baseClasses.join(', ')}</span></div>`;
+    }
+    if (n.metadata?.customDescription) {
+      html += `<div class="tt-desc">📝 ${escHtml(n.metadata.customDescription)}</div>`;
+    }
+    if (n.error) {
+      const errorLines = n.error.split('\n').slice(0, 3);
+      errorLines.forEach(e => {
+        const isWarning = e.startsWith('WARNING');
+        html += `<div class="tt-error" style="${isWarning ? 'border-left-color:#d29922;color:#d29922;background:rgba(210,153,34,0.15);' : ''}">⚠ ${escHtml(e)}</div>`;
+      });
+      if (n.error.split('\n').length > 3) {
+        html += `<div class="tt-error" style="opacity:0.7;">… and ${n.error.split('\n').length - 3} more</div>`;
+      }
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    positionTooltip(tooltip, panelRect.left + pos.x, panelRect.top + pos.y);
+  });
+
+  cy.on('mouseout', 'node', () => { tooltip.style.display = 'none'; });
+
+  cy.on('mousemove', 'node', evt => {
+    const pos = evt.renderedPosition;
+    const panelRect = document.getElementById('cy-wrap').getBoundingClientRect();
+    positionTooltip(tooltip, panelRect.left + pos.x, panelRect.top + pos.y);
+  });
+
+  // ── Edge hover ──
+  cy.on('mouseover', 'edge', evt => {
+    const e = evt.target.data();
+    const pos = evt.renderedPosition;
+    const panelRect = document.getElementById('cy-wrap').getBoundingClientRect();
+
+    let html = `<div class="tt-title">Edge Details</div>`;
+    html += `<div class="tt-row"><span class="tt-key">From</span><span class="tt-val">${escHtml(e.from?.split('::').pop() || e.from)}</span></div>`;
+    html += `<div class="tt-row"><span class="tt-key">To</span><span class="tt-val">${escHtml(e.to?.split('::').pop() || e.to)}</span></div>`;
+    html += `<div class="tt-row"><span class="tt-key">Relation</span><span class="tt-val tt-relation">${e.relation}</span></div>`;
+    if (e.description) {
+      html += `<div class="tt-desc">${escHtml(e.description)}</div>`;
+    }
+    if (e.error) {
+      html += `<div class="tt-error">⚠ ${escHtml(e.error)}</div>`;
+    }
+
+    tooltip.innerHTML = html;
+    tooltip.style.display = 'block';
+    positionTooltip(tooltip, panelRect.left + pos.x, panelRect.top + pos.y);
+  });
+
+  cy.on('mouseout', 'edge', () => { tooltip.style.display = 'none'; });
+  cy.on('mousemove', 'edge', evt => {
+    const pos = evt.renderedPosition;
+    const panelRect = document.getElementById('cy-wrap').getBoundingClientRect();
+    positionTooltip(tooltip, panelRect.left + pos.x, panelRect.top + pos.y);
+  });
+
+  // ── Node click ──
+  cy.on('tap', 'node', evt => {
+    const node = evt.target;
+    const nodeData = node.data();
+
+    if (traceMode) {
+      runTrace(node);
+      return;
+    }
+
+    selectedNodeId = nodeData.id;
+    highlightNeighborhood(node);
+    showDetailPanel(nodeData);
+    updateNodeListSelection(nodeData.id);
+  });
+
+  // ── Background click (deselect) ──
+  cy.on('tap', evt => {
+    if (evt.target === cy) {
+      clearHighlight();
+      hideDetailPanel();
+      selectedNodeId = null;
+      updateNodeListSelection(null);
+    }
+  });
+
+  // ── Double click: open file ──
+  cy.on('dblclick', 'node', evt => {
+    const n = evt.target.data();
+    if (n.file && n.file !== 'external') {
+      vscode.postMessage({ command: 'openFile', file: n.file, line: n.line });
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// HIGHLIGHT
+// ═══════════════════════════════════════════════════════════
+function highlightNeighborhood(node) {
+  const neighborhood = node.closedNeighborhood();
+  cy.elements().addClass('dimmed').removeClass('highlighted');
+  neighborhood.removeClass('dimmed').addClass('highlighted');
+}
+
+function clearHighlight() {
+  cy.elements().removeClass('dimmed highlighted searched trace-path');
+}
+
+// ═══════════════════════════════════════════════════════════
+// TRACE MODE
+// ═══════════════════════════════════════════════════════════
+function runTrace(startNode) {
+  clearHighlight();
+
+  // BFS to find all downstream nodes
+  const visited = new Set();
+  const queue = [startNode];
+  const traceNodes = [];
+  const traceEdges = [];
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (visited.has(current.id())) { continue; }
+    visited.add(current.id());
+    traceNodes.push(current);
+
+    current.outgoers('edge').forEach(edge => {
+      traceEdges.push(edge);
+      queue.push(edge.target());
+    });
+  }
+
+  cy.elements().addClass('dimmed').removeClass('trace-path');
+  traceNodes.forEach(n => n.removeClass('dimmed').addClass('trace-path'));
+  traceEdges.forEach(e => e.removeClass('dimmed').addClass('trace-path'));
+
+  // Build chain for detail panel
+  const chain = traceNodes.map(n => n.data());
+  showTracePanel(startNode.data(), chain, traceEdges.map(e => e.data()));
+}
+
+// ═══════════════════════════════════════════════════════════
+// DETAIL PANEL
+// ═══════════════════════════════════════════════════════════
+function showDetailPanel(nodeData) {
+  const panel = document.getElementById('detail-panel');
+  const body = document.getElementById('detail-body');
+  const title = document.getElementById('detail-title');
+
+  title.textContent = nodeData.label;
+  panel.classList.add('open');
+
+  const typeColors = { class: '#3fb950', function: '#d29922', variable: '#58a6ff', object: '#388bfd', file: '#bc8cff' };
+  const color = typeColors[nodeData.type] || '#e6edf3';
+
+  let html = `<span class="detail-badge" style="background:${color}22;color:${color};border:1px solid ${color}44;">${nodeData.type}</span>`;
+  if (nodeData.metadata?.language) {
+    html += ` <span class="lang-badge ${nodeData.metadata.language}">${nodeData.metadata.language}</span>`;
+  }
+
+  html += `<div class="detail-prop"><div class="detail-prop-key">Name</div><div class="detail-prop-val">${escHtml(nodeData.label)}</div></div>`;
+
+  if (nodeData.file && nodeData.file !== 'external') {
+    html += `<div class="detail-prop"><div class="detail-prop-key">File</div><div class="detail-prop-val"><a onclick="openFile('${escHtml(nodeData.file)}', ${nodeData.line || 0})">${escHtml(shortPath(nodeData.file))}</a></div></div>`;
+  }
+
+  if (nodeData.line) {
+    html += `<div class="detail-prop"><div class="detail-prop-key">Line</div><div class="detail-prop-val">${nodeData.line}</div></div>`;
+  }
+
+  if (nodeData.metadata?.customDescription) {
+    html += `<div class="detail-prop"><div class="detail-prop-key">Description</div><div class="detail-prop-val" style="color:#8b949e;font-style:italic;">${escHtml(nodeData.metadata.customDescription)}</div></div>`;
+  }
+
+  if (nodeData.metadata?.baseClasses?.length) {
+    html += `<div class="detail-prop"><div class="detail-prop-key">Inherits</div><div class="detail-prop-val">${nodeData.metadata.baseClasses.join(', ')}</div></div>`;
+  }
+
+  if (nodeData.metadata?.params !== undefined) {
+    html += `<div class="detail-prop"><div class="detail-prop-key">Params</div><div class="detail-prop-val">${escHtml(nodeData.metadata.params || 'none')}</div></div>`;
+  }
+
+  if (nodeData.metadata?.decorator) {
+    html += `<div class="detail-prop"><div class="detail-prop-key">Decorator</div><div class="detail-prop-val">@${escHtml(nodeData.metadata.decorator)}</div></div>`;
+  }
+
+  if (nodeData.metadata?.isConstructor) {
+    html += `<div class="detail-prop"><div class="detail-prop-key">Special</div><div class="detail-prop-val">Constructor</div></div>`;
+  }
+
+  if (nodeData.error) {
+    const errorLines = nodeData.error.split('\n');
+    const errors = errorLines.filter(e => e.startsWith('ERROR'));
+    const warnings = errorLines.filter(e => e.startsWith('WARNING'));
+    
+    if (errors.length > 0) {
+      html += `<div class="detail-section-title">Errors (${errors.length})</div>`;
+      errors.forEach(e => {
+        html += `<div class="error-badge">❌ ${escHtml(e.replace(/^ERROR:\s*/, ''))}</div>`;
+      });
+    }
+    if (warnings.length > 0) {
+      html += `<div class="detail-section-title">Warnings (${warnings.length})</div>`;
+      warnings.forEach(e => {
+        html += `<div class="warning-badge">⚠ ${escHtml(e.replace(/^WARNING:\s*/, ''))}</div>`;
+      });
+    }
+
+    // AI fix button
+    html += `<div style="margin-top:10px;"><button onclick="requestAIAnalysis('${escHtml(nodeData.id)}','errors')" style="width:100%;padding:8px;background:linear-gradient(135deg,rgba(88,166,255,0.15),rgba(188,140,255,0.15));border:1px solid var(--purple);border-radius:6px;color:var(--accent);font-size:12px;cursor:pointer;font-weight:600;transition:all 0.2s;">🧠 AI: Explain & Fix Errors</button></div>`;
+  }
+
+  // AI analyze button for all nodes
+  html += `<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);"><button onclick="requestAIAnalysis('${escHtml(nodeData.id)}','explain')" style="width:100%;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text-muted);font-size:12px;cursor:pointer;transition:all 0.2s;">📖 AI: Explain This Code</button></div>`;
+
+  // Related nodes
+  if (cy) {
+    const node = cy.getElementById(nodeData.id);
+    if (node.length > 0) {
+      const edges = node.connectedEdges();
+      if (edges.length > 0) {
+        html += `<div class="detail-section-title">Connections (${edges.length})</div>`;
+        edges.forEach(edge => {
+          const eData = edge.data();
+          const isOut = eData.source === nodeData.id;
+          const other = isOut ? cy.getElementById(eData.target) : cy.getElementById(eData.source);
+          const otherData = other.data();
+          html += `<div class="rel-item" onclick="focusNode('${escHtml(otherData.id)}')">
+            <div class="rel-type">${isOut ? '→' : '←'} ${eData.relation}</div>
+            <div class="rel-target">${escHtml(otherData.label)}</div>
+          </div>`;
+        });
+      }
+    }
+  }
+
+  body.innerHTML = html;
+}
+
+function showTracePanel(startData, chain, edges) {
+  const panel = document.getElementById('detail-panel');
+  const body = document.getElementById('detail-body');
+  const title = document.getElementById('detail-title');
+
+  title.textContent = '🔗 Trace: ' + startData.label;
+  panel.classList.add('open');
+
+  let html = `<div class="detail-prop-key" style="margin-bottom:8px;">Dependency chain from "${escHtml(startData.label)}"</div>`;
+  html += `<div class="trace-chain">`;
+
+  chain.forEach((node, i) => {
+    html += `<div class="trace-step" onclick="focusNode('${escHtml(node.id)}')">
+      ${i > 0 ? '<span class="trace-arrow">↓</span>' : ''}
+      <span style="font-size:10px;color:#8b949e;">${i + 1}.</span>
+      <span>${escHtml(node.label)}</span>
+      <span style="font-size:10px;color:#8b949e;margin-left:auto;">${node.type}</span>
+    </div>`;
+  });
+
+  html += `</div>`;
+  body.innerHTML = html;
+}
+
+function hideDetailPanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+// NODE LIST
+// ═══════════════════════════════════════════════════════════
+function populateNodeList() {
+  if (!cy) { return; }
+  const list = document.getElementById('node-list');
+  const icons = { class: '◎', function: '▣', variable: '▷', object: '●', file: '◈' };
+  const colors = { class: '#3fb950', function: '#d29922', variable: '#58a6ff', object: '#388bfd', file: '#bc8cff' };
+
+  const items = cy.nodes().map(n => n.data()).sort((a, b) => {
+    const typeOrder = { file: 0, class: 1, object: 2, function: 3, variable: 4 };
+    return (typeOrder[a.type] || 5) - (typeOrder[b.type] || 5) || a.label.localeCompare(b.label);
+  });
+
+  list.innerHTML = items.map(n => `
+    <div class="node-list-item" id="listitem-${CSS.escape(n.id)}" onclick="focusNode('${escHtml(n.id)}')">
+      <span class="item-icon" style="color:${colors[n.type] || '#8b949e'}">${icons[n.type] || '•'}</span>
+      <span class="item-label" title="${escHtml(n.label)}">${escHtml(n.label)}</span>
+    </div>
+  `).join('');
+}
+
+function updateNodeListSelection(nodeId) {
+  document.querySelectorAll('.node-list-item').forEach(el => el.classList.remove('selected'));
+  if (nodeId) {
+    const item = document.getElementById(`listitem-${CSS.escape(nodeId)}`);
+    if (item) {
+      item.classList.add('selected');
+      item.scrollIntoView({ block: 'nearest' });
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// FOCUS NODE
+// ═══════════════════════════════════════════════════════════
+function focusNode(nodeId) {
+  if (!cy) { return; }
+  const node = cy.getElementById(nodeId);
+  if (node.length === 0) { return; }
+
+  cy.animate({ fit: { eles: node.closedNeighborhood(), padding: 60 }, duration: 400 });
+  clearHighlight();
+  highlightNeighborhood(node);
+  showDetailPanel(node.data());
+  selectedNodeId = nodeId;
+  updateNodeListSelection(nodeId);
+}
+
+function openFile(file, line) {
+  vscode.postMessage({ command: 'openFile', file, line });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SEARCH
+// ═══════════════════════════════════════════════════════════
+document.getElementById('search').addEventListener('input', evt => {
+  if (!cy) { return; }
+  const q = evt.target.value.trim().toLowerCase();
+  cy.elements().removeClass('searched dimmed highlighted');
+
+  if (!q) { return; }
+
+  const matched = cy.nodes().filter(n => n.data('label').toLowerCase().includes(q));
+  const unmatched = cy.nodes().difference(matched);
+
+  matched.addClass('searched');
+  unmatched.addClass('dimmed');
+  cy.edges().addClass('dimmed');
+
+  if (matched.length > 0) {
+    cy.animate({ fit: { eles: matched, padding: 80 }, duration: 400 });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.filter-row').forEach(row => {
+  row.addEventListener('click', () => {
+    const type = row.dataset.type;
+    const toggle = row.querySelector('.toggle');
+    if (visibleTypes.has(type)) {
+      visibleTypes.delete(type);
+      toggle.classList.remove('on');
+    } else {
+      visibleTypes.add(type);
+      toggle.classList.add('on');
+    }
+    rebuildGraph();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// LAYOUT
+// ═══════════════════════════════════════════════════════════
+document.querySelectorAll('.layout-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.layout-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentLayout = btn.dataset.layout;
+    if (cy) { cy.layout(getLayout(currentLayout)).run(); }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════
+// VIEW MODE
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btn-file-view').addEventListener('click', () => {
+  viewMode = 'file';
+  document.getElementById('view-mode-label').textContent = 'File';
+  document.getElementById('btn-file-view').style.display = 'none';
+  document.getElementById('btn-code-view').style.display = '';
+  rebuildGraph();
+});
+
+document.getElementById('btn-code-view').addEventListener('click', () => {
+  viewMode = 'code';
+  document.getElementById('view-mode-label').textContent = 'Code';
+  document.getElementById('btn-code-view').style.display = 'none';
+  document.getElementById('btn-file-view').style.display = '';
+  rebuildGraph();
+});
+
+// ═══════════════════════════════════════════════════════════
+// TRACE MODE TOGGLE
+// ═══════════════════════════════════════════════════════════
+document.getElementById('btn-trace').addEventListener('click', () => {
+  traceMode = !traceMode;
+  document.getElementById('btn-trace').classList.toggle('active', traceMode);
+  if (!traceMode) { clearHighlight(); hideDetailPanel(); }
+});
+
+// ── Magnetic Drag Toggle ──
+document.getElementById('btn-magdrag').addEventListener('click', () => {
+  magneticDrag = !magneticDrag;
+  document.getElementById('btn-magdrag').classList.toggle('active', magneticDrag);
+});
+// Initialize button state
+document.getElementById('btn-magdrag').classList.add('active');
+
+// ═══════════════════════════════════════════════════════════
+// REBUILD
+// ═══════════════════════════════════════════════════════════
+function rebuildGraph() {
+  const elements = buildElements(RAW_GRAPH, viewMode);
+  initCy(elements);
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONTROLS
+// ═══════════════════════════════════════════════════════════
+document.getElementById('ctrl-zoom-in').addEventListener('click', () => cy?.zoom({ level: cy.zoom() * 1.3, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } }));
+document.getElementById('ctrl-zoom-out').addEventListener('click', () => cy?.zoom({ level: cy.zoom() * 0.77, renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 } }));
+document.getElementById('ctrl-fit').addEventListener('click', () => cy?.fit(undefined, 40));
+document.getElementById('btn-fit').addEventListener('click', () => cy?.fit(undefined, 40));
+document.getElementById('detail-close-btn').addEventListener('click', () => { hideDetailPanel(); clearHighlight(); selectedNodeId = null; });
+
+// ═══════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════
+const exportBtn = document.getElementById('btn-export');
+const exportMenu = document.getElementById('export-menu');
+
+exportBtn.addEventListener('click', evt => {
+  const r = exportBtn.getBoundingClientRect();
+  exportMenu.style.top = (r.bottom + 4) + 'px';
+  exportMenu.style.left = r.left + 'px';
+  exportMenu.style.display = exportMenu.style.display === 'block' ? 'none' : 'block';
+  evt.stopPropagation();
+});
+
+document.addEventListener('click', () => { exportMenu.style.display = 'none'; });
+
+document.getElementById('exp-png').addEventListener('click', () => {
+  if (!cy) { return; }
+  const png = cy.png({ full: true, scale: 2, bg: '#0d1117' });
+  const a = document.createElement('a');
+  a.href = png;
+  a.download = 'projectcodewiz-graph.png';
+  a.click();
+  exportMenu.style.display = 'none';
+});
+
+document.getElementById('exp-json').addEventListener('click', () => {
+  const json = JSON.stringify(RAW_GRAPH, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'projectcodewiz-graph.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  exportMenu.style.display = 'none';
+});
+
+// ═══════════════════════════════════════════════════════════
+// STATS + HELPERS
+// ═══════════════════════════════════════════════════════════
+function updateStats() {
+  if (!cy) { return; }
+  document.getElementById('stats').textContent = `${cy.nodes().length} nodes · ${cy.edges().length} edges`;
+}
+
+function shortPath(p) {
+  if (!p) { return ''; }
+  const parts = p.replace(/\\/g, '/').split('/');
+  return parts.length > 2 ? '…/' + parts.slice(-2).join('/') : p;
+}
+
+function escHtml(s) {
+  if (!s) { return ''; }
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function positionTooltip(tt, x, y) {
+  const margin = 14;
+  const maxX = window.innerWidth - tt.offsetWidth - margin;
+  const maxY = window.innerHeight - tt.offsetHeight - margin;
+  tt.style.left = Math.min(x + margin, maxX) + 'px';
+  tt.style.top = Math.min(y + margin, maxY) + 'px';
+}
+
+// ═══════════════════════════════════════════════════════════
+// AI INTEGRATION
+// ═══════════════════════════════════════════════════════════
+function requestAIAnalysis(nodeId, type) {
+  const node = RAW_GRAPH.nodes.find(n => n.id === nodeId);
+  if (!node) { return; }
+  vscode.postMessage({
+    command: 'aiAnalyze',
+    nodeId: nodeId,
+    file: node.file,
+    line: node.line,
+    label: node.label,
+    type: type,
+    errors: node.error || '',
+  });
+}
+
+document.getElementById('btn-ai-node').addEventListener('click', () => {
+  if (!selectedNodeId) {
+    vscode.postMessage({ command: 'info', text: 'Select a node first, then click AI Analyze.' });
+    return;
+  }
+  requestAIAnalysis(selectedNodeId, 'insights');
+});
+
+// ═══════════════════════════════════════════════════════════
+// VSCODE API
+// ═══════════════════════════════════════════════════════════
+const vscode = acquireVsCodeApi();
+
+// ═══════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    rebuildGraph();
+    document.getElementById('loading').style.display = 'none';
+  }, 300);
+});
+</script>
+</body>
+</html>
