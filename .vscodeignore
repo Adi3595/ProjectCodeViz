@@ -19,10 +19,5 @@ node_modules/
 *.vsix
 
 # Always keep required extension assets (runtime)
-!out/**
-!package.json
-!media/**
-
-
 
 
