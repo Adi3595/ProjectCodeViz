@@ -1,14 +1,28 @@
-.vscode/**
-.vscode-test/**
-src/**
-.gitignore
-.eslintrc.json
-**/*.map
+# VSCode extension packaging ignore rules (used by vsce)
+
+# Dev / source
+src/
 **/*.ts
-!out/**
-node_modules/**
-!node_modules/tree-sitter/**
-!node_modules/tree-sitter-cpp/**
+**/*.map
 tsconfig.json
-vsc-extension-quickstart.md
+.eslintrc.json
+.vscode/
+.vscode-test/
+
+# Tests / samples (optional)
+# sample-cpp/
+
+# Dependencies
+node_modules/
+
+# VSCE output artifacts
 *.vsix
+
+# Always keep required extension assets (runtime)
+!out/**
+!package.json
+!media/**
+
+
+
+
