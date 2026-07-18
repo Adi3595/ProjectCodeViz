@@ -259,3 +259,7 @@ ProjectCodeWiz includes multi-language error detection:
 - Node.js 18+ (for extension development)
 - `clang` (optional, for enhanced C++ error detection — install via your OS package manager)
 - AI API key (optional, for AI features — get from your preferred provider)
+
+## Contributors
+Aditya Gawali    
+Atharva Ghule
