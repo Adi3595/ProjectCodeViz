@@ -263,3 +263,4 @@ ProjectCodeWiz includes multi-language error detection:
 ## Contributors
 Aditya Gawali    
 Atharva Ghule
+Om Gawale
